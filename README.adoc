@@ -1,0 +1,127 @@
+= Tests to reproduce YugaByte issues
+
+Uses https://github.com/lhotari/dbcontainers and  https://www.testcontainers.org/[TestContainers] to start an embedded YugaByte.
+
+== Logs and core dumps
+
+Logs and core dumps will be stored under `build/yb_logs_and_core` directory.
+
+=== Linux kernel's core_pattern configuration
+
+The assumption is that you run this on a Linux host and configure the coredump pattern this way:
+
+```
+echo '/cores/core.%e.%p' | sudo tee /proc/sys/kernel/core_pattern
+```
+
+Without this configuration, you won't get the coredumps from the containers to the directory mounted from a directory within `build/yb_logs_and_core`.
+
+On MacOSX / Windows, you might be able to change the core_pattern config with this command:
+```
+docker run --privileged --rm -it busybox sh -c "echo /cores/core.%e.%p > /proc/sys/kernel/core_pattern"
+```
+
+=== Docker default-ulimit core configuration
+
+`/etc/docker/daemon.json` should set the core size to unlimited (-1) to get full core dumps.
+
+Example of minimal `/etc/docker/daemon.json` file
+```
+{
+  "default-ulimits": {
+    "core": {
+      "Name": "core",
+      "Hard": -1,
+      "Soft": -1
+    }
+  }
+}
+```
+
+=== Cleaning logs and core dumps
+
+Since docker will create the logs and coredump files with root ownership you will have to use `sudo` to cleanup the log directory after running tests that create logs/core dumps:
+
+```
+sudo rm -rf build/yb_logs_and_core
+```
+
+=== Example of investigating a core dump file
+
+Locate the core dump file under `build/yb_logs_and_core`
+
+`find build/yb_logs_and_core -path "*/cores/*" -type f`
+
+For example this returns one core file:
+```
+build/yb_logs_and_core/yblogs17715015938172622722/cores/tserver/core.rpc_tp_TabletSe.1
+```
+
+Start an interactive shell in a docker container with the same YB version as was used in the test:
+
+```
+docker run --rm -it -v $PWD/build/yb_logs_and_core/yblogs17715015938172622722/cores/tserver:/cores yugabytedb/yugabyte:2.0.10.0-b4
+```
+
+Install gdb in the container and configure it:
+```
+yum install -y gdb
+echo 'set auto-load safe-path /' >> /root/.gdbinit
+```
+
+Start gdb and load a core file:
+```
+gdb /home/yugabyte/bin/yb-{master|tserver} /cores/<path-to-core-file>
+```
+
+In this case we will load one of the core files:
+```
+gdb /home/yugabyte/bin/yb-tserver /cores/core.rpc_tp_TabletSe.1
+```
+
+After loading one can get the backtrace with `bt` command. To get backtrace with locals, use `bt full` command. It might be useful to limit the output to just the top most stack frames, for example `bt full 4`.
+
+In this example:
+```
+(gdb) bt full 4
+#0  0x00007fa5d9d8bd87 in yb::docdb::BoundedRocksDbIterator::BoundedRocksDbIterator (this=0x7fa5b54f8a10, rocksdb=0x0, read_opts=..., key_bounds=0x34675f0) at ../../src/yb/docdb/bounded_rocksdb_iterator.cc:22
+        vlocal__ = 0x7fa5d297480c <fLI::FLAGS_v>
+#1  0x00007fa5d9dcdc4b in yb::docdb::CreateRocksDBIterator (rocksdb=0x0, docdb_key_bounds=0x34675f0, bloom_filter_mode=bloom_filter_mode@entry=yb::docdb::DONT_USE_BLOOM_FILTER, user_key_for_filter=..., query_id=query_id@entry=0,
+    file_filter=..., iterate_upper_bound=0x7fa5b54f92e0) at ../../src/yb/docdb/docdb_rocksdb_util.cc:380
+        read_opts = {verify_checksums = true, fill_cache = true, snapshot = 0x0, iterate_upper_bound = 0x7fa5b54f92e0, read_tier = rocksdb::kReadAllTier, tailing = false, managed = false, total_order_seek = false,
+          prefix_same_as_start = false, pin_data = false, query_id = 0, table_aware_file_filter = {<std::__shared_ptr<rocksdb::TableAwareReadFileFilter, (__gnu_cxx::_Lock_policy)2>> = {_M_ptr = 0x0, _M_refcount = {
+                _M_pi = 0x0}}, <No data fields>}, file_filter = {<std::__shared_ptr<rocksdb::ReadFileFilter, (__gnu_cxx::_Lock_policy)2>> = {_M_ptr = 0x0, _M_refcount = {_M_pi = 0x0}}, <No data fields>}, static kDefault = {
+            verify_checksums = true, fill_cache = true, snapshot = 0x0, iterate_upper_bound = 0x0, read_tier = rocksdb::kReadAllTier, tailing = false, managed = false, total_order_seek = false, prefix_same_as_start = false,
+            pin_data = false, query_id = 0, table_aware_file_filter = {<std::__shared_ptr<rocksdb::TableAwareReadFileFilter, (__gnu_cxx::_Lock_policy)2>> = {_M_ptr = 0x0, _M_refcount = {_M_pi = 0x0}}, <No data fields>},
+            file_filter = {<std::__shared_ptr<rocksdb::ReadFileFilter, (__gnu_cxx::_Lock_policy)2>> = {_M_ptr = 0x0, _M_refcount = {_M_pi = 0x0}}, <No data fields>}, static kDefault = <same as static member of an already seen type>}}
+#2  0x00007fa5d9d92064 in EnsureIntentIteratorCreated (this=0x7fa5b54f9290) at ../../src/yb/docdb/conflict_resolution.cc:200
+No locals.
+#3  yb::docdb::(anonymous namespace)::ConflictResolver::ReadIntentConflicts (this=this@entry=0x7fa5b54f9290, type=..., type@entry=..., intent_key_prefix=intent_key_prefix@entry=0x7fa5b54f8e90)
+    at ../../src/yb/docdb/conflict_resolution.cc:135
+        conflicting_intent_types = <optimized out>
+        upperbound_key = {data_ = {static npos = 18446744073709551615, _M_dataplus = {<std::allocator<char>> = {<__gnu_cxx::new_allocator<char>> = {<No data fields>}, <No data fields>}, _M_p = 0x7fa5b54f89b0 "\031"},
+            _M_string_length = 48950112, {_M_local_buf = "\030\000\000\000\000\000\000\000\220\222O\265\245\177\000", _M_allocated_capacity = 24}}}
+        se = <optimized out>
+        prefix_slice = <optimized out>
+(More stack frames follow...)
+```
+
+== Tests
+
+== `TRUNCATE TABLE` crash
+
+Test case is link:src/test/java/com/github/lhotari/dbcontainer/yugabyte/truncatetable/AbstractTruncateTableCrashBugTest.java[AbstractTruncateTableCrashBugTest]
+
+to run test with YB 2.0.10.0-b4:
+
+```
+./gradlew truncateTableCrash
+```
+
+Poll the `build/yb_logs_and_core` to see which logs and core dumps got produced.
+
+You can also pass the https://docs.yugabyte.com/latest/releases/[YugaByte docker image tag] on the command line:
+```
+./gradlew -PyugabyteVersion=2.0.8.0-b5 truncateTableCrash
+```
+
