@@ -54,7 +54,9 @@ sudo rm -rf build/yb_logs_and_core
 
 Locate the core dump file under `build/yb_logs_and_core`
 
-`find build/yb_logs_and_core -path "*/cores/*" -type f`
+```
+find build/yb_logs_and_core -path "*/cores/*" -type f
+```
 
 For example this returns one core file:
 ```
