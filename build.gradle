@@ -60,6 +60,13 @@ task truncateTableCrashLocalhost(type: Test) {
     }
 }
 
+task truncateTableCrashPostgres(type: Test) {
+    classpath = test.classpath
+    filter {
+        includeTestsMatching "com.github.lhotari.dbcontainer.yugabyte.truncatetable.EmbeddedPostgresTruncateTableCrashBugTest"
+    }
+}
+
 tasks.withType(Test) {
     useJUnitPlatform()
     testLogging {

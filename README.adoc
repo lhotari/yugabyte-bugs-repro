@@ -136,3 +136,9 @@ If you want to run the same test against a local YB server, use the `truncateTab
 ./gradlew truncateTableCrashLocalhost
 ```
 Edit the database connection settings directly in link:src/test/java/com/github/lhotari/dbcontainer/yugabyte/truncatetable/ProvidedYBTruncateTableCrashBugTest.java[ProvidedYBTruncateTableCrashBugTest] source file.
+
+To run the same test case with embedded real Postgres (`postgres:11-alpine` image):
+```
+./gradlew truncateTableCrashPostgres
+```
+This demonstrates that the test case runs fine with real Postgres.
