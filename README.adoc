@@ -1,6 +1,10 @@
+:toc: macro
+
 = Tests to reproduce YugaByte issues
 
 Uses https://github.com/lhotari/dbcontainers and  https://www.testcontainers.org/[TestContainers] to start an embedded YugaByte.
+
+toc::[]
 
 == Logs and core dumps
 
