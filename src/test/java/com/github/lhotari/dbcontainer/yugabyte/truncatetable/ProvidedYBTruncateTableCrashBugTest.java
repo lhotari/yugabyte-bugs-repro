@@ -4,7 +4,7 @@ import org.springframework.test.context.TestPropertySource;
 
 // runs the AbstractTruncateTableCrashBugTest with provided database
 // configure the database connectivity settings here:
-@TestPropertySource({
+@TestPropertySource(properties = {
         "spring.datasource.url=jdbc:postgresql://localhost:5433/postgres",
         "spring.datasource.username=postgres",
         "spring.datasource.password=",

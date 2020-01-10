@@ -53,6 +53,13 @@ task truncateTableCrash(type: Test) {
     systemProperty 'yugabyteVersion', project.findProperty('yugabyteVersion') ?: '2.0.10.0-b4'
 }
 
+task truncateTableCrashLocalhost(type: Test) {
+    classpath = test.classpath
+    filter {
+        includeTestsMatching "com.github.lhotari.dbcontainer.yugabyte.truncatetable.ProvidedYBTruncateTableCrashBugTest"
+    }
+}
+
 tasks.withType(Test) {
     useJUnitPlatform()
     testLogging {

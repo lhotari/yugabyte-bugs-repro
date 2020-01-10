@@ -131,3 +131,8 @@ You can also pass the https://docs.yugabyte.com/latest/releases/[YugaByte docker
 ./gradlew -PyugabyteVersion=2.0.8.0-b5 truncateTableCrash
 ```
 
+If you want to run the same test against a local YB server, use the `truncateTableCrashLocalhost` target.
+```
+./gradlew truncateTableCrashLocalhost
+```
+Edit the database connection settings directly in link:src/test/java/com/github/lhotari/dbcontainer/yugabyte/truncatetable/ProvidedYBTruncateTableCrashBugTest.java[ProvidedYBTruncateTableCrashBugTest] source file.
