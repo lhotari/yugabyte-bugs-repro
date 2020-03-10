@@ -142,3 +142,21 @@ To run the same test case with embedded real Postgres (`postgres:11-alpine` imag
 ./gradlew truncateTableCrashPostgres
 ```
 This demonstrates that the test case runs fine with real Postgres.
+
+== JSON index bug
+
+Test case is link:src/test/java/com/github/lhotari/dbcontainer/yugabyte/jsonindex/AbstractJsonIndexBugTest.java[AbstractJsonIndexBugTest]
+
+to run test with YB 2.1.1.0-b2:
+
+```
+./gradlew jsonIndexBug
+```
+
+to run test with YB 2.1.0.0-b18 (expected to pass)
+
+```
+./gradlew -PyugabyteVersion=2.1.0.0-b18 jsonIndexBug
+```
+
+The issue seems to be that all results will be returned when a condition using a indexed JSONB field shouldn't return any results.

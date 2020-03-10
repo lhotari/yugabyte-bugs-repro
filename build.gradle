@@ -68,6 +68,14 @@ task truncateTableCrashPostgres(type: Test) {
     }
 }
 
+task jsonIndexBug(type: Test) {
+    classpath = test.classpath
+    filter {
+        includeTestsMatching "com.github.lhotari.dbcontainer.yugabyte.jsonindex.EmbeddedYBJsonIndexBugTest"
+    }
+    systemProperty 'yugabyteVersion', project.findProperty('yugabyteVersion') ?: '2.1.1.0-b2'
+}
+
 tasks.withType(Test) {
     useJUnitPlatform()
     testLogging {
