@@ -164,7 +164,7 @@ The issue seems to be that all results will be returned when a condition using a
 
 == Concurrent inserts & selects issue, possible issue in read restart handling
 
-Test case is link:com.github.lhotari.dbcontainer.yugabyte.readrestart.AbstractReadRestartBugTest[AbstractReadRestartBugTest]
+Test case is link:src/test/java/com/github/lhotari/dbcontainer/yugabyte/readrestart/AbstractReadRestartBugTest.java[AbstractReadRestartBugTest]
 
 to run test with YB 2.1.2.0-b10:
 
@@ -237,5 +237,5 @@ select * from my_child where my_table_id = ?
 ```
 doesn't return results in all cases.
 
-see the source code of link:com.github.lhotari.dbcontainer.yugabyte.readrestart.AbstractReadRestartBugTest[AbstractReadRestartBugTest] for more details.
+see the source code of link:src/test/java/com/github/lhotari/dbcontainer/yugabyte/readrestart/AbstractReadRestartBugTest.java[AbstractReadRestartBugTest] for more details.
 
