@@ -97,4 +97,5 @@ tasks.withType(Test) {
         // enable verbose test logging by default
         events = org.gradle.api.tasks.testing.logging.TestLogEvent.values().toList().toSet()
     }
+    outputs.upToDateWhen { false }
 }
