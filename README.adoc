@@ -160,3 +160,82 @@ to run test with YB 2.1.0.0-b18 (expected to pass)
 ```
 
 The issue seems to be that all results will be returned when a condition using a indexed JSONB field shouldn't return any results.
+
+
+== Concurrent inserts & selects issue, possible issue in read restart handling
+
+Test case is link:com.github.lhotari.dbcontainer.yugabyte.readrestart.AbstractReadRestartBugTest[AbstractReadRestartBugTest]
+
+to run test with YB 2.1.2.0-b10:
+
+```
+./gradlew readRestartBug
+```
+
+to run test with YB 2.0.12.0-b10
+
+```
+./gradlew -PyugabyteVersion=2.0.12.0-b10 readRestartBug
+```
+
+to run test with Postgres 11, the test passes
+
+```
+./gradlew readRestartBugPostgres
+```
+
+
+The problem is that a query doesn't return any results when there is a concurrent insert happening and the query should return results.
+
+Some explanation of the test case.
+
+Tables in test
+```sql
+CREATE TABLE my_table (id UUID primary key, created timestamp not null);
+CREATE TABLE my_child (id UUID primary key, my_table_id UUID, created timestamp not null, FOREIGN KEY (my_table_id) REFERENCES my_table (id));
+```
+
+one thread is doing inserts
+```java
+                        UUID my_table_id = UUID.randomUUID();
+                        System.out.println("i:" + i + " my_table_id:" + my_table_id);
+                        transactionTemplate.execute(status -> {
+                            jdbcOperations.update("INSERT INTO my_table values (?, ?)", my_table_id, new Date());
+                            return null;
+                        });
+                        for (int j = 0; j < 100; j++) {
+                            transactionTemplate.execute(status -> {
+                                System.out.print(".");
+                                jdbcOperations.update("INSERT INTO my_child values (?, ?, ?)", UUID.randomUUID(), my_table_id, new Date());
+                                return null;
+                            });
+                            activeParentId.set(my_table_id);
+...
+```
+
+another thread is doing selects in a loop:
+```java
+                    UUID my_table_id = activeParentId.get();
+                    if (my_table_id != null) {
+                        System.out.println("querying " + my_table_id);
+                        transactionTemplate.execute(status -> {
+                            List<Map<String, Object>> results = jdbcOperations.queryForList("select * from my_child where my_table_id = ?", my_table_id);
+                            if (results.isEmpty()) {
+                                throw new IllegalStateException("There should have been results for " + my_table_id);
+                            }
+                            System.out.println("ok " + my_table_id);
+                            return null;
+                        });
+                    } else {
+                        Thread.sleep(100L);
+                    }
+```
+
+The select
+```sql
+select * from my_child where my_table_id = ?
+```
+doesn't return results in all cases.
+
+see the source code of link:com.github.lhotari.dbcontainer.yugabyte.readrestart.AbstractReadRestartBugTest[AbstractReadRestartBugTest] for more details.
+
