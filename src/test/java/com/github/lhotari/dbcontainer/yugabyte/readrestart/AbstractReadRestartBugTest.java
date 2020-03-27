@@ -106,7 +106,7 @@ abstract class AbstractReadRestartBugTest {
                     if (my_table_id != null) {
                         System.out.println("querying " + my_table_id);
                         transactionTemplate.execute(status -> {
-                            List<Map<String, Object>> results = jdbcOperations.queryForList("select * from my_child where my_table_id = ?", my_table_id.toString());
+                            List<Map<String, Object>> results = jdbcOperations.queryForList("select * from my_child where my_table_id = '" +  my_table_id.toString() + "'");
                             if (results.isEmpty()) {
                                 throw new IllegalStateException("There should have been results for " + my_table_id);
                             }
