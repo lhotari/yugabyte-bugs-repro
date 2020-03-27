@@ -40,8 +40,8 @@ abstract class AbstractReadRestartBugTest {
         Thread.sleep(10000L);
         jdbcOperations.execute("DROP TABLE IF EXISTS my_child");
         jdbcOperations.execute("DROP TABLE IF EXISTS my_table");
-        jdbcOperations.execute("CREATE TABLE my_table (id UUID primary key, created timestamp not null)");
-        jdbcOperations.execute("CREATE TABLE my_child (id UUID primary key, my_table_id UUID, created timestamp not null, FOREIGN KEY (my_table_id) REFERENCES my_table (id))");
+        jdbcOperations.execute("CREATE TABLE my_table (id char(36) primary key, created timestamp not null)");
+        jdbcOperations.execute("CREATE TABLE my_child (id char(36) primary key, my_table_id char(36), created timestamp not null, FOREIGN KEY (my_table_id) REFERENCES my_table (id))");
     }
 
     @BeforeAll
@@ -77,13 +77,13 @@ abstract class AbstractReadRestartBugTest {
                         UUID my_table_id = UUID.randomUUID();
                         System.out.println("i:" + i + " my_table_id:" + my_table_id);
                         transactionTemplate.execute(status -> {
-                            jdbcOperations.update("INSERT INTO my_table values (?, ?)", my_table_id, new Date());
+                            jdbcOperations.update("INSERT INTO my_table values (?, ?)", my_table_id.toString(), new Date());
                             return null;
                         });
                         for (int j = 0; j < 100; j++) {
                             transactionTemplate.execute(status -> {
                                 System.out.print(".");
-                                jdbcOperations.update("INSERT INTO my_child values (?, ?, ?)", UUID.randomUUID(), my_table_id, new Date());
+                                jdbcOperations.update("INSERT INTO my_child values (?, ?, ?)", UUID.randomUUID().toString(), my_table_id.toString(), new Date());
                                 return null;
                             });
                             activeParentId.set(my_table_id);
@@ -106,7 +106,7 @@ abstract class AbstractReadRestartBugTest {
                     if (my_table_id != null) {
                         System.out.println("querying " + my_table_id);
                         transactionTemplate.execute(status -> {
-                            List<Map<String, Object>> results = jdbcOperations.queryForList("select * from my_child where my_table_id = ?", my_table_id);
+                            List<Map<String, Object>> results = jdbcOperations.queryForList("select * from my_child where my_table_id = ?", my_table_id.toString());
                             if (results.isEmpty()) {
                                 throw new IllegalStateException("There should have been results for " + my_table_id);
                             }
@@ -122,6 +122,7 @@ abstract class AbstractReadRestartBugTest {
                 }
             }
         });
+        //TimeUnit.SECONDS.sleep(120);
         assertThat(completionLatch.await(30, TimeUnit.SECONDS)).isTrue();
         assertThat(terminated).as("there were exceptions").isFalse();
     }
