@@ -84,6 +84,15 @@ task readRestartBug(type: Test) {
     systemProperty 'yugabyteVersion', project.findProperty('yugabyteVersion') ?: '2.1.2.0-b10'
 }
 
+task readRestartBugStaticSql(type: Test) {
+    classpath = test.classpath
+    filter {
+        includeTestsMatching "com.github.lhotari.dbcontainer.yugabyte.readrestart.EmbeddedYBReadRestartBugTest"
+    }
+    systemProperty 'yugabyteVersion', project.findProperty('yugabyteVersion') ?: '2.1.2.0-b10'
+    systemProperty 'readrestartbug.staticsql', 'true'
+}
+
 task readRestartBugPostgres(type: Test) {
     classpath = test.classpath
     filter {

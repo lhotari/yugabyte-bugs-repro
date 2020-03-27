@@ -239,3 +239,10 @@ doesn't return results in all cases.
 
 see the source code of link:src/test/java/com/github/lhotari/dbcontainer/yugabyte/readrestart/AbstractReadRestartBugTest.java[AbstractReadRestartBugTest] for more details.
 
+UPDATE:
+The test passes when the other thread uses a static SQL statement for the query. To run the test with this behavior:
+
+```
+./gradlew readRestartBugStaticSql
+```
+The test passes.

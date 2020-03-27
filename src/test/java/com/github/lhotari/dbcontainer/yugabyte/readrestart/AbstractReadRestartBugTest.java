@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest(classes = AbstractReadRestartBugTest.TestSpringConfiguration.class)
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class AbstractReadRestartBugTest {
+    private static final Boolean USE_STATIC_SQL = Boolean.getBoolean("readrestartbug.staticsql");
 
     private ExecutorService executorService;
 
@@ -106,7 +107,12 @@ abstract class AbstractReadRestartBugTest {
                     if (my_table_id != null) {
                         System.out.println("querying " + my_table_id);
                         transactionTemplate.execute(status -> {
-                            List<Map<String, Object>> results = jdbcOperations.queryForList("select * from my_child where my_table_id = ?", my_table_id);
+                            List<Map<String, Object>> results;
+                            if (USE_STATIC_SQL) {
+                                results = jdbcOperations.queryForList("select * from my_child where my_table_id = '" + my_table_id + "'");
+                            } else {
+                                results = jdbcOperations.queryForList("select * from my_child where my_table_id = ?", my_table_id);
+                            }
                             if (results.isEmpty()) {
                                 throw new IllegalStateException("There should have been results for " + my_table_id);
                             }
@@ -122,7 +128,7 @@ abstract class AbstractReadRestartBugTest {
                 }
             }
         });
-        assertThat(completionLatch.await(30, TimeUnit.SECONDS)).isTrue();
+        assertThat(completionLatch.await(60, TimeUnit.SECONDS)).isTrue();
         assertThat(terminated).as("there were exceptions").isFalse();
     }
 }
