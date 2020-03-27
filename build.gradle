@@ -84,6 +84,16 @@ task readRestartBug(type: Test) {
     systemProperty 'yugabyteVersion', project.findProperty('yugabyteVersion') ?: '2.1.2.0-b10'
 }
 
+task readRestartBugSimpleQueryMode(type: Test) {
+    classpath = test.classpath
+    filter {
+        includeTestsMatching "com.github.lhotari.dbcontainer.yugabyte.readrestart.EmbeddedYBReadRestartBugTest"
+    }
+    systemProperty 'yugabyteVersion', project.findProperty('yugabyteVersion') ?: '2.1.2.0-b10'
+    // see preferQueryMode in https://jdbc.postgresql.org/documentation/head/connect.html
+    systemProperty 'readrestartbug.preferQueryMode', 'simple'
+}
+
 task readRestartBugStaticSql(type: Test) {
     classpath = test.classpath
     filter {

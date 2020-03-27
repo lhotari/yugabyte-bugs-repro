@@ -23,6 +23,12 @@ public class CustomYugaByteSpringTestContextInitializer extends YugaByteSpringTe
                 LOG.info("command line: " + modifiedCommand);
                 return modifiedCommand;
             }
+
+            @Override
+            public String getJdbcUrl() {
+                // see preferQueryMode in https://jdbc.postgresql.org/documentation/head/connect.html
+                return super.getJdbcUrl() + "?preferQueryMode=" + System.getProperty("readrestartbug.preferQueryMode", "extended");
+            }
         };
         return yugaByteDatabaseContainer;
     }

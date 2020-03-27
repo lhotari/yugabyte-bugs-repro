@@ -246,3 +246,11 @@ The test passes when the other thread uses a static SQL statement for the query.
 ./gradlew readRestartBugStaticSql
 ```
 The test passes.
+
+UPDATE 2#:
+The test produces a "ERROR: Query error: Restart read required at: { read: { physical: 1585316553533711 } local_limit: { physical: 1585316553541734 } global_limit: <min> in_txn_limit: <max> serial_no: 0 }" type of failure when https://jdbc.postgresql.org/documentation/head/connect.html[Postgres JDBC driver's "preferQueryMode"] is set to "simple".
+
+to run with simple query mode:
+```
+./gradlew readRestartBugSimpleQueryMode
+```
